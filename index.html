@@ -2,136 +2,148 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>KONACORE | FPS FIX</title>
+    <title>KONACORE | REAL PISTOL EDITION</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        /* Menüdeyken fare gözüksün */
-        body, html { 
-            height: 100%; width: 100%; overflow: hidden; 
-            background: #000; font-family: 'Segoe UI', sans-serif;
-            cursor: default; 
-        }
+        body, html { height: 100%; width: 100%; overflow: hidden; background: #111; font-family: 'Arial', sans-serif; }
 
-        /* GİRİŞ EKRANI */
+        /* MENÜ */
         #menu {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle, #500 0%, #000 100%);
+            background: radial-gradient(circle, #300 0%, #000 100%);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 1000;
+            z-index: 10000; cursor: default;
         }
         .logo { font-size: 80px; color: #fff; text-shadow: 0 0 20px #f00; margin-bottom: 20px; }
-        .play-btn { 
-            padding: 20px 60px; font-size: 25px; background: #f00; color: #fff; 
-            border: none; border-radius: 50px; cursor: pointer; font-weight: bold;
-            box-shadow: 0 0 30px #f00; transition: 0.3s;
-        }
+        .play-btn { padding: 20px 60px; font-size: 25px; background: #f00; color: #fff; border: none; border-radius: 50px; cursor: pointer; font-weight: bold; box-shadow: 0 0 30px #f00; }
 
-        /* OYUN SAHNESİ - BAŞLAYINCA FAREYİ GİZLE */
+        /* OYUN ALANI */
         #game-stage {
             display: none; width: 100vw; height: 100vh;
-            background: radial-gradient(circle at center, #2b0000 0%, #000 100%);
-            position: relative; overflow: hidden;
-            cursor: none; /* Sadece burada fare gizli */
+            background: radial-gradient(circle at center, #222 0%, #050505 100%);
+            position: relative; overflow: hidden; cursor: none;
         }
 
-        /* UYARI MESAJI */
-        #reload-warning {
-            display: none; position: absolute; top: 50%; left: 50%;
-            transform: translate(-50%, -50%); color: #fff; font-size: 35px;
-            text-shadow: 0 0 20px #f00; z-index: 500; text-align: center;
-            border: 2px solid #f00; padding: 20px; background: rgba(0,0,0,0.7);
-        }
-
-        /* NİŞANGAH (YEŞİL) */
+        /* NİŞANGAH (GÖRSELDEKİ GİBİ YEŞİL HALKA) */
         #crosshair {
-            position: absolute; width: 30px; height: 30px;
-            border: 2px solid #0f0; border-radius: 50%;
+            position: absolute; width: 60px; height: 60px;
+            border: 5px solid #0f0; border-radius: 50%;
             pointer-events: none; z-index: 600; transform: translate(-50%, -50%);
+            box-shadow: 0 0 15px #0f0;
         }
 
-        /* SİLAH VE HEDEFLER */
-        .hud { position: absolute; color: #f00; font-weight: bold; z-index: 200; font-size: 24px; }
-        #ammo-ui { bottom: 20px; left: 20px; }
-        #score-ui { top: 20px; right: 20px; color: #0f0; }
-        .target { position: absolute; width: 50px; height: 50px; border: 3px solid #f00; border-radius: 50%; box-shadow: 0 0 15px #f00; }
-        #gun-box { position: absolute; bottom: 0; right: 10%; width: 250px; height: 100px; background: #222; border: 2px solid #f00; z-index: 50; }
-        .hole { position: absolute; width: 8px; height: 8px; background: #555; border-radius: 50%; pointer-events: none; }
+        /* GERÇEKÇİ SİLAH (GÖRSELDEKİ GİBİ) */
+        #gun-img {
+            position: absolute; bottom: -50px; right: 5%;
+            width: 500px; pointer-events: none; z-index: 500;
+            transition: transform 0.05s;
+        }
+
+        /* RELOAD UYARISI */
+        #reload-msg {
+            display: none; position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); color: #fff; font-size: 40px;
+            text-shadow: 0 0 20px #f00; z-index: 800; text-align: center;
+        }
+
+        /* HUD ELEMANLARI */
+        .hud { position: absolute; font-weight: bold; z-index: 700; font-size: 28px; }
+        #ammo-ui { bottom: 30px; left: 30px; color: #f00; }
+        #score-ui { top: 30px; right: 30px; color: #0f0; }
+
+        /* HEDEFLER VE MERMİ İZLERİ */
+        .target { position: absolute; width: 30px; height: 30px; background: radial-gradient(circle, #f00 0%, transparent 70%); border: 2px solid #f00; border-radius: 50%; box-shadow: 0 0 10px #f00; }
+        .hole { position: absolute; width: 10px; height: 10px; background: rgba(100,100,100,0.6); border-radius: 50%; pointer-events: none; border: 1px solid #000; }
     </style>
 </head>
-<body onmousemove="updateMouse(event)" onmousedown="fireGun(event)" onkeydown="checkKey(event)">
+<body onmousemove="move(event)" onmousedown="fire(event)" onkeydown="reload(event)">
 
     <div id="menu">
         <h1 class="logo">KONACORE</h1>
-        <button class="play-btn" onclick="startPlay()">PLAY NOW</button>
+        <button class="play-btn" onclick="start()">PLAY NOW</button>
     </div>
 
     <div id="game-stage">
-        <div id="reload-warning">OUT OF AMMO!<br>PRESS 'R' TO RELOAD</div>
+        <div id="reload-msg">OUT OF AMMO!<br>PRESS 'R' TO RELOAD</div>
         <div id="crosshair"></div>
-        <div id="ammo-ui" class="hud">AMMO: <span id="ammo-count">30</span></div>
-        <div id="score-ui" class="hud">SCORE: <span id="score-count">0</span></div>
-        <div id="gun-box"></div>
+        <div id="ammo-ui" class="hud">AMMO: <span id="ammo-val">30</span> / 30 (R to Reload)</div>
+        <div id="score-ui" class="hud">SCORE: <span id="score-val">0</span></div>
+        <img id="gun-img" src="https://purepng.com/public/uploads/large/purepng.com-beretta-92-pistolpistolhandgunfirearmberetta-92-15815111162446aak0.png" alt="pistol">
     </div>
 
     <script>
-        let score = 0;
         let ammo = 30;
-        let gameActive = false;
+        let score = 0;
+        let active = false;
 
-        function startPlay() {
+        function start() {
             document.getElementById('menu').style.display = 'none';
             document.getElementById('game-stage').style.display = 'block';
-            gameActive = true;
-            spawn();
+            active = true;
+            for(let i=0; i<5; i++) spawn();
         }
 
-        function updateMouse(e) {
-            if(!gameActive) return;
+        function move(e) {
+            if(!active) return;
             document.getElementById('crosshair').style.left = e.pageX + 'px';
             document.getElementById('crosshair').style.top = e.pageY + 'px';
-            document.getElementById('gun-box').style.transform = `translateX(${(e.pageX - window.innerWidth/2) / 30}px)`;
+            document.getElementById('gun-img').style.transform = `translateX(${(e.pageX - window.innerWidth/2) / 20}px)`;
         }
 
-        function fireGun(e) {
-            if(!gameActive) return;
+        function fire(e) {
+            if(!active) return;
             if(ammo <= 0) {
-                document.getElementById('reload-warning').style.display = 'block';
+                document.getElementById('reload-msg').style.display = 'block';
                 return;
             }
 
             ammo--;
-            document.getElementById('ammo-count').innerText = ammo;
+            document.getElementById('ammo-val').innerText = ammo;
 
-            // Mermi İzi
-            let h = document.createElement('div');
-            h.className = 'hole';
-            h.style.left = (e.pageX - 4) + 'px';
-            h.style.top = (e.pageY - 4) + 'px';
-            document.getElementById('game-stage').appendChild(h);
+            // Silah tepmesi
+            const gun = document.getElementById('gun-img');
+            gun.style.transform += ' translateY(40px) rotate(-5deg)';
+            setTimeout(() => { 
+                gun.style.transform = gun.style.transform.replace(' translateY(40px) rotate(-5deg)', '');
+            }, 50);
 
-            // Vurma
+            // Mermi izi
+            let hole = document.createElement('div');
+            hole.className = 'hole';
+            hole.style.left = e.pageX - 5 + 'px';
+            hole.style.top = e.pageY - 5 + 'px';
+            document.getElementById('game-stage').appendChild(hole);
+
+            // Vurma kontrolü
             if(e.target.classList.contains('target')) {
                 e.target.remove();
                 score += 10;
-                document.getElementById('score-count').innerText = score;
+                document.getElementById('score-val').innerText = score;
                 spawn();
             }
         }
 
-        function checkKey(e) {
+        function reload(e) {
             if(e.key.toLowerCase() === 'r') {
                 ammo = 30;
-                document.getElementById('ammo-count').innerText = ammo;
-                document.getElementById('reload-warning').style.display = 'none';
+                document.getElementById('ammo-val').innerText = ammo;
+                document.getElementById('reload-msg').style.display = 'none';
+                
+                const gun = document.getElementById('gun-img');
+                gun.style.transition = '0.4s';
+                gun.style.transform = 'translateY(300px)';
+                setTimeout(() => {
+                    gun.style.transform = 'translateY(0)';
+                    setTimeout(() => { gun.style.transition = '0.05s'; }, 400);
+                }, 400);
             }
         }
 
         function spawn() {
             let t = document.createElement('div');
             t.className = 'target';
-            t.style.left = Math.random() * (window.innerWidth - 100) + 'px';
-            t.style.top = Math.random() * (window.innerHeight - 200) + 'px';
+            t.style.left = Math.random() * (window.innerWidth - 100) + 50 + 'px';
+            t.style.top = Math.random() * (window.innerHeight - 200) + 50 + 'px';
             document.getElementById('game-stage').appendChild(t);
         }
     </script>
